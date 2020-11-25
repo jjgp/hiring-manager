@@ -1,0 +1,10 @@
+name: siop_ml_2020
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - matplotlib
+  - pandas
+  - pre-commit
+  - python=3.8.6
+  - scikit-learn
