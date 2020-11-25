@@ -4,6 +4,8 @@
 
 # Setup
 
+## Conda
+
 Install the [conda](https://docs.conda.io/en/latest/miniconda.html#)
 environment:
 
@@ -24,9 +26,19 @@ To update the environment specify it in the `environment.yml` and then
 conda env update --file environment.yml  --prune
 ```
 
-With the `siop_ml_2020` environment activated install the
+## Pre-commit
+
+With the `siop_ml_2020` conda environment activated install the
 [pre-commit](https://pre-commit.com/) Git hooks:
 
 ```
 pre-commit install
 ```
+
+## Data
+
+...
+
+## Visual Studio Code
+
+...
