@@ -47,8 +47,6 @@ pre-commit install
 
 ## Data
 
-[Description of the data](https://drive.google.com/open?id=1_Ve4jRoYsj5GB62_9BXdJGjstl_2KsZ5)
-
 [Training data set](https://drive.google.com/open?id=1a0ltph5u7cD8TKEtprYDt2TpmW8On2b_)
 
 [Development data set](https://drive.google.com/open?id=15ZHCnMuWYKrcXAE1ugJsJS7xG6krEQW-)
