@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - autopep8
   - flake8
   - jupyter
   - matplotlib
