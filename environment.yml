@@ -10,4 +10,5 @@ dependencies:
   - pandas
   - pre-commit
   - python=3.8.6
+  - rope
   - scikit-learn
