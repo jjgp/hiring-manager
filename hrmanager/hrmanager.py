@@ -64,7 +64,7 @@ assert(target_cols == list(TARGET_COLS))
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] \
     + 0.5 * y_proba[:, 0] * y_proba[:, 2]
-hr_scores = hr_scores[:] - np.abs(y_proba[:, 1] - 0.5)
+# hr_scores = hr_scores[:] - np.abs(y_proba[:, 1] - 0.5)
 
 hr_score_col = "HR_SCORE"
 y_hired = y_test.copy()
