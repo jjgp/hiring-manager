@@ -1,4 +1,4 @@
-name: siop_ml_2020
+name: hrmanager
 channels:
   - conda-forge
   - defaults
@@ -12,3 +12,4 @@ dependencies:
   - python=3.8.6
   - rope
   - scikit-learn
+  - xgboost
