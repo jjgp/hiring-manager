@@ -20,10 +20,7 @@ train = pd.read_csv(
     na_values=" "
 )
 train.dropna(subset=target_cols, inplace=True)
-print(train.shape)
-train.head()
 
-# %%
 X = train[predictor_cols]
 y = train[target_cols]
 X_train, X_test, y_train, y_test = train_test_split(
@@ -33,17 +30,17 @@ X_train, X_test, y_train, y_test = train_test_split(
 estimator = XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4)
 model = OneVsRestClassifier(estimator)
 
-# %%
 pipeline = Pipeline(steps=[
     ('imputer', SimpleImputer()),
     ('model', model)
 ])
 pipeline.fit(X_train, y_train)
-y_pred = pipeline.predict(X_test)
+y_pred = pipeline.predict_proba(X_test)
 
 # %%
-print(accuracy_score(y_test[[HIGH_PERFORMER_COL]], y_pred[:, 0]))
-print(accuracy_score(y_test[[PROTECTED_GROUP_COL]], y_pred[:, 1]))
-print(accuracy_score(y_test[[RETAINED_COL]], y_pred[:, 2]))
+y_thr = y_pred > 0.5
+print(accuracy_score(y_test[[HIGH_PERFORMER_COL]], y_thr[:, 0]))
+print(accuracy_score(y_test[[PROTECTED_GROUP_COL]], y_thr[:, 1]))
+print(accuracy_score(y_test[[RETAINED_COL]], y_thr[:, 2]))
 
 # %%
