@@ -26,10 +26,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 # %%
 pipeline = Pipeline(steps=[
     ('preprocessor', SimpleImputer()),
-    ('model', XGBClassifier())
+    ('model', XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4))
 ])
 pipeline.fit(X_train, y_train)
 y_pred = pipeline.predict(X_test)
 
 # %%
 accuracy_score(y_test, y_pred)
+
+# %%
