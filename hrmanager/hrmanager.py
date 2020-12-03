@@ -1,7 +1,9 @@
 # %%
+import numpy as np
 import pandas as pd
 from schema import HIGH_PERFORMER_COL, INDEX_COL, PREDICTOR_COLS, \
-    PROTECTED_GROUP_COL, RETAINED_COL
+    PROTECTED_GROUP_COL, RETAINED_COL, TARGET_COLS
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -9,16 +11,43 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
+
+class HiringScorer(BaseEstimator, TransformerMixin):
+    def __init__(self, ordered_target_cols):
+        target_cols = list(TARGET_COLS)
+        if len(ordered_target_cols) != len(target_cols):
+            raise ValueError("Number of cols specified does not match")
+        cols_diff = set(ordered_target_cols) - set(target_cols)
+        if cols_diff:
+            raise ValueError(f"Unsupported cols preset: {cols_diff}")
+        self._target_cols = target_cols
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        """
+        Final_score = Overall_accuracy – Unfairness
+
+        Overall_accuracy=
+        Percentage_of_true_top_performers_hired * 25+
+        Percentage_of_true_retained_hired * 25 +
+        Percentage_of_true_retained_top_perf_hired * 50
+
+        Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
+        """
+        return X
+
+
+hs = HiringScorer(list(TARGET_COLS))
+hs.transform(np.array([[0.6, 0.4, 0.1]]))
+
 # %%
 predictor_cols = list(PREDICTOR_COLS)
-target_cols = [HIGH_PERFORMER_COL, PROTECTED_GROUP_COL, RETAINED_COL]
+target_cols = list(TARGET_COLS)
 usecols = [INDEX_COL] + target_cols + predictor_cols
-train = pd.read_csv(
-    "../data/train.csv",
-    index_col="UNIQUE_ID",
-    usecols=usecols,
-    na_values=" "
-)
+train = pd.read_csv("../data/train.csv", index_col="UNIQUE_ID",
+                    usecols=usecols, na_values=" ")
 train.dropna(subset=target_cols, inplace=True)
 
 X = train[predictor_cols]
@@ -32,7 +61,8 @@ model = OneVsRestClassifier(estimator)
 
 pipeline = Pipeline(steps=[
     ('imputer', SimpleImputer()),
-    ('model', model)
+    ('model', model),
+    ('scorer', HiringScorer(target_cols))
 ])
 pipeline.fit(X_train, y_train)
 y_pred = pipeline.predict_proba(X_test)
