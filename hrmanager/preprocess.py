@@ -11,10 +11,10 @@ def predictors_dataset(filepath, target_cols=list(TARGET_COLS), dropna=False):
     df = read_csv(filepath, target_cols + binary_cols + numeric_cols)
     # NOTE: filling NaN with 0.0s
     df[binary_cols] = df[binary_cols].fillna(0)
-    for col in numeric_cols:
-        mode = df[col].mode(dropna=True).iloc[-1]
-        # NOTE: filling NaN with the mode of that column
-        df[col] = df[col].fillna(mode)
+    # for col in numeric_cols:
+    #     mode = df[col].mode(dropna=True).iloc[-1]
+    #     # NOTE: filling NaN with the mode of that column
+    #     df[col] = df[col].fillna(mode)
     return df.dropna() if dropna else df
 
 

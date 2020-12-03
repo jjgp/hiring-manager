@@ -1,4 +1,4 @@
-name: siop_ml_2020
+name: hrmanager
 channels:
   - conda-forge
   - defaults

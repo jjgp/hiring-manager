@@ -1,0 +1,5 @@
+{
+	"name": "mfeurer/auto-sklearn",
+	"extensions": ["ms-python.python"],
+	"image": "mfeurer/auto-sklearn:master",
+}
