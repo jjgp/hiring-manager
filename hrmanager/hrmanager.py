@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
 # %%
@@ -33,7 +34,8 @@ model = OneVsRestClassifier(estimator)
 
 # %%
 pipeline = Pipeline(steps=[
-    ('preprocessor', SimpleImputer()),
+    ('imputer', SimpleImputer()),
+    ('scaler', StandardScaler()),
     ('model', model)
 ])
 pipeline.fit(X_train, y_train)
