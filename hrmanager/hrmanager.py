@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 import pandas as pd
+from lightgbm import LGBMClassifier
 from schema import HIGH_PERFORMER_COL, INDEX_COL, PREDICTOR_COLS, \
     PROTECTED_GROUP_COL, RETAINED_COL, TARGET_COLS
 from sklearn.impute import SimpleImputer
@@ -8,7 +9,6 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
-from xgboost import XGBClassifier
 
 # %%
 predictor_cols = list(PREDICTOR_COLS)
@@ -27,7 +27,8 @@ y = train[target_cols]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
 # %%
-estimator = XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4)
+estimator = LGBMClassifier(
+    num_leaves=64, n_estimators=2000, learning_rate=0.05, n_jobs=4)
 model = OneVsRestClassifier(estimator)
 
 pipeline = Pipeline(steps=[

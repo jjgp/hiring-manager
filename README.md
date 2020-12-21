@@ -33,7 +33,7 @@ To update the environment specify it in the `environment.yml` and then
 ([see _Updating an environment_](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#updating-an-environment)):
 
 ```
-conda env update --file environment.yml  --prune
+conda env update --file environment.yml --prune
 ```
 
 ## Pre-commit

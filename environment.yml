@@ -6,6 +6,7 @@ dependencies:
   - autopep8
   - flake8
   - jupyter
+  - lightgbm
   - matplotlib
   - pandas
   - pre-commit
