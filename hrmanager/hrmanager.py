@@ -4,7 +4,7 @@ import pandas as pd
 from schema import HIGH_PERFORMER_COL, INDEX_COL, PREDICTOR_COLS, \
     PROTECTED_GROUP_COL, RETAINED_COL, TARGET_COLS
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
@@ -24,9 +24,7 @@ train.dropna(subset=target_cols, inplace=True)
 
 X = train[predictor_cols]
 y = train[target_cols]
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.1, random_state=0
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
 # %%
 estimator = XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4)
@@ -41,9 +39,15 @@ y_proba = pipeline.predict_proba(X_test)
 
 # %%
 y_pred = y_proba > 0.5
-print(accuracy_score(y_test[[HIGH_PERFORMER_COL]], y_pred[:, 0]))
-print(accuracy_score(y_test[[PROTECTED_GROUP_COL]], y_pred[:, 1]))
-print(accuracy_score(y_test[[RETAINED_COL]], y_pred[:, 2]))
+print(HIGH_PERFORMER_COL)
+print(accuracy_score(y_test[HIGH_PERFORMER_COL], y_pred[:, 0]))
+print(confusion_matrix(y_test[HIGH_PERFORMER_COL], y_pred[:, 0]))
+print(PROTECTED_GROUP_COL)
+print(accuracy_score(y_test[PROTECTED_GROUP_COL], y_pred[:, 1]))
+print(confusion_matrix(y_test[PROTECTED_GROUP_COL], y_pred[:, 1]))
+print(RETAINED_COL)
+print(accuracy_score(y_test[RETAINED_COL], y_pred[:, 2]))
+print(confusion_matrix(y_test[RETAINED_COL], y_pred[:, 2]))
 
 # %%
 """
@@ -64,7 +68,7 @@ assert(target_cols == list(TARGET_COLS))
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] \
     + 0.5 * y_proba[:, 0] * y_proba[:, 2]
-# hr_scores = hr_scores[:] - np.abs(y_proba[:, 1] - 0.5)
+hr_scores = hr_scores[:] + 0.1 * y_proba[:, 1]
 
 hr_score_col = "HR_SCORE"
 y_hired = y_test.copy()
@@ -72,7 +76,6 @@ y_hired[hr_score_col] = hr_scores
 y_hired.sort_values(by=[hr_score_col], ascending=False, inplace=True)
 y_hired = y_hired.head(y_hired.shape[0] // 2)
 
-# %%
 thp_count_test = y_test[y_test[HIGH_PERFORMER_COL] == 1.0].shape[0]
 tr_count_test = y_test[y_test[RETAINED_COL] == 1.0].shape[0]
 thpr_count_test = y_test[
