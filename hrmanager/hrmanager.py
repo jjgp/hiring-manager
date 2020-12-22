@@ -1,8 +1,8 @@
 # %%
 import numpy as np
 import pandas as pd
-from schema import HIGH_PERFORMER_COL, INDEX_COL, PREDICTOR_COLS, \
-    PROTECTED_GROUP_COL, RETAINED_COL, TARGET_COLS
+from schema import (HIGH_PERFORMER_COL, INDEX_COL, PREDICTOR_COLS,
+                    PROTECTED_GROUP_COL, RETAINED_COL, TARGET_COLS)
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -24,6 +24,15 @@ train.dropna(subset=target_cols, inplace=True)
 
 X = train[predictor_cols]
 y = train[target_cols]
+
+# Create a new target that represents candidates who are high performers and
+# retained
+high_performer_retained_col = f"{HIGH_PERFORMER_COL}_{RETAINED_COL}"
+y[high_performer_retained_col] = y.apply(
+    lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0),
+    axis=1
+)
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
 # %%
@@ -48,6 +57,9 @@ print(confusion_matrix(y_test[PROTECTED_GROUP_COL], y_pred[:, 1]))
 print(RETAINED_COL)
 print(accuracy_score(y_test[RETAINED_COL], y_pred[:, 2]))
 print(confusion_matrix(y_test[RETAINED_COL], y_pred[:, 2]))
+print(high_performer_retained_col)
+print(accuracy_score(y_test[high_performer_retained_col], y_pred[:, 3]))
+print(confusion_matrix(y_test[high_performer_retained_col], y_pred[:, 3]))
 
 # %%
 """
@@ -67,7 +79,7 @@ Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
 assert(target_cols == list(TARGET_COLS))
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] \
-    + 0.5 * y_proba[:, 0] * y_proba[:, 2]
+    + 0.5 * y_proba[:, 3]
 hr_scores = hr_scores[:] + 0.1 * y_proba[:, 1]
 
 hr_score_col = "HR_SCORE"
