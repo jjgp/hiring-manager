@@ -1,3 +1,6 @@
+github:
+  prebuilds:
+    branches: true
 image: continuumio/miniconda
 tasks:
   - init: conda env update -n base -f environment.yml
