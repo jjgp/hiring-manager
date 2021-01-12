@@ -2,4 +2,4 @@ github:
   prebuilds:
     branches: true
 image:
-  file: .gitpod.Dockerfile
+  file: Dockerfile
