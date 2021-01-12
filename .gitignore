@@ -3,5 +3,3 @@
 .vscode/*
 !.vscode/extensions.json
 __pycache__/
-data/*
-!data/.gitkeep
