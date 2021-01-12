@@ -1,5 +1,5 @@
-FROM continuumio/miniconda3
+FROM python:3
 
-COPY environment.yml .
+COPY requirements.txt ./
 
-RUN conda env update -n base -f environment.yml --quiet
+RUN pip install --no-cache-dir -r requirements.txt

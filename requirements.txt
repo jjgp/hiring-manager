@@ -1,0 +1,9 @@
+autopep8
+flake8
+jupyter
+matplotlib
+pandas
+pre-commit
+rope
+scikit-learn
+xgboost
