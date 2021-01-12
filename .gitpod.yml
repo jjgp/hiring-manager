@@ -1,5 +1,0 @@
-github:
-  prebuilds:
-    branches: true
-image:
-  file: Dockerfile
