@@ -1,4 +1,13 @@
 {
-    "dockerFile": "../Dockerfile",
-    "extensions": ["ms-python.python", "ms-vscode-remote.vscode-remote-extensionpack"]
+    "image": "python:3",
+    "extensions": ["ms-python.python"],
+    "forwardPorts": [9000],
+    "postCreateCommand": "pip3 install -r requirements.txt",
+    "settings": {
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"python.pythonPath": "/usr/local/bin/python",
+		"python.linting.enabled": true,
+		"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+		"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8"
+	},
 }
