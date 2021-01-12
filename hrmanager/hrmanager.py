@@ -1,6 +1,12 @@
 # %%
 import numpy as np
 import pandas as pd
+from schema import HIGH_PERFORMER_COL
+from schema import INDEX_COL
+from schema import PREDICTOR_COLS
+from schema import PROTECTED_GROUP_COL
+from schema import RETAINED_COL
+from schema import TARGET_COLS
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
@@ -8,13 +14,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
-
-from hrmanager.schema import HIGH_PERFORMER_COL
-from hrmanager.schema import INDEX_COL
-from hrmanager.schema import PREDICTOR_COLS
-from hrmanager.schema import PROTECTED_GROUP_COL
-from hrmanager.schema import RETAINED_COL
-from hrmanager.schema import TARGET_COLS
 
 # %%
 predictor_cols = list(PREDICTOR_COLS)
