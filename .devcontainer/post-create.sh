@@ -8,5 +8,7 @@ echo "Installing Git LFS..."
 apt-get update
 apt-get install -yq git-lfs
 git lfs install
+echo "Pulling latest with Git LFS..."
+git lfs pull
 echo "Installing Python requirements..."
 pip3 install -r requirements.txt
