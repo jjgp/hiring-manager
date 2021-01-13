@@ -9,9 +9,7 @@
 		"python.linting.enabled": true,
 		"python.linting.flake8Enabled": true,
 		"python.linting.flake8Args": ["--max-line-length", "88", "--extend-ignore", "E203, W503"],
-		"python.linting.flake8Path": "flake8",
 		"python.linting.pylintEnabled": false,
-		"python.formatting.blackPath": "black",
 		"python.formatting.provider": "black"
 	},
 }
