@@ -2,7 +2,7 @@
     "image": "python:3",
     "extensions": ["ms-python.python"],
     "forwardPorts": [9000],
-    "postCreateCommand": "pip3 install -r requirements.txt",
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
     "settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",
 		"python.pythonPath": "/usr/local/bin/python",
