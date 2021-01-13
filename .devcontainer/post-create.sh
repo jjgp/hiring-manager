@@ -11,4 +11,4 @@ git lfs install
 echo "Pulling latest with Git LFS..."
 git lfs pull
 echo "Installing Python requirements..."
-pip3 install -r requirements.txt
+pip3.9 install -r requirements.txt
