@@ -7,7 +7,8 @@
 		"terminal.integrated.shell.linux": "/bin/bash",
 		"python.pythonPath": "/usr/local/bin/python",
 		"python.linting.enabled": true,
-		"python.linting.pylintEnabled": true,
+		"python.linting.flake8Enabled": true,
+		"python.formatting": "black",
 		"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 		"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8"
 	},
