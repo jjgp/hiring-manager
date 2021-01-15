@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 # %% [markdown]
-# # Extracting target and predictors from train.csv
+# # Extracting targets and predictors from train.csv
 
 # %%
 predictor_cols = list(PREDICTOR_COLS)
