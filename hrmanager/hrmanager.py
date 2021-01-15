@@ -52,7 +52,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 # # Pipeline and training
 
 # %%
-estimator = XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4)
+estimator = XGBClassifier(
+    objective="binary:logistic",
+    eval_metric="logloss",
+    n_estimators=1000,
+    learning_rate=0.05,
+    n_jobs=4,
+)
 model = OneVsRestClassifier(estimator)
 
 pipeline = Pipeline(
@@ -80,20 +86,7 @@ for idx, target in enumerate(target_cols):
 # # Ranking hires based on predictions and heuristic
 
 # %%
-"""
-Final_score = Overall_accuracy – Unfairness
-
-Overall_accuracy=
-Percentage_of_true_top_performers_hired * 25+
-Percentage_of_true_retained_hired * 25 +
-Percentage_of_true_retained_top_perf_hired * 50
-
-Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
-"""
-
-# The following is a scoring mechanism inspired by the above
-# It is a heursitic and not the actual calculation
-# The purpose is to augment the probabilities with a heuristic and sort them
+# This heuristic is based on the actual scoring mechanism
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = (
     hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] + 0.5 * y_proba[:, 3]
@@ -110,34 +103,52 @@ y_hired = y_hired.head(y_hired.shape[0] // 2)
 # # Final score
 
 # %%
-thp_count_test = y_test[y_test[HIGH_PERFORMER_COL] == 1.0].shape[0]
-tr_count_test = y_test[y_test[RETAINED_COL] == 1.0].shape[0]
-thpr_count_test = y_test[
-    (y_test[HIGH_PERFORMER_COL] == 1.0) & (y_test[RETAINED_COL] == 1.0)
-].shape[0]
-protected_count_test = y_test[y_test[PROTECTED_GROUP_COL] == 1.0].shape[0]
-non_protected_count_test = y_test[y_test[PROTECTED_GROUP_COL] == 0.0].shape[0]
+def extract_counts(split):  # noqa: E302
+    thp_count = split[split[HIGH_PERFORMER_COL] == 1.0].shape[0]
+    tr_count = split[split[RETAINED_COL] == 1.0].shape[0]
+    thpr_count = split[
+        (split[HIGH_PERFORMER_COL] == 1.0) & (split[RETAINED_COL] == 1.0)
+    ].shape[0]
+    p_count = split[split[PROTECTED_GROUP_COL] == 1.0].shape[0]
+    np_count = split[split[PROTECTED_GROUP_COL] == 0.0].shape[0]
+    return (thp_count, tr_count, thpr_count, p_count, np_count)
 
-thp_count_hired = y_hired[y_hired[HIGH_PERFORMER_COL] == 1.0].shape[0]
-tr_count_hired = y_hired[y_hired[RETAINED_COL] == 1.0].shape[0]
-thpr_count_hired = y_hired[
-    (y_hired[HIGH_PERFORMER_COL] == 1.0) & (y_test[RETAINED_COL] == 1.0)
-].shape[0]
-protected_count_hired = y_hired[y_hired[PROTECTED_GROUP_COL] == 1.0].shape[0]
-non_protected_count_hired = y_hired[y_hired[PROTECTED_GROUP_COL] == 0.0].shape[0]
 
-adverse_impact_ratio = (protected_count_hired / protected_count_test) / (
-    non_protected_count_hired / non_protected_count_test
-)
+(
+    thp_count_hired,
+    tr_count_hired,
+    thpr_count_hired,
+    p_count_hired,
+    np_count_hired,
+) = extract_counts(y_hired)
+
+(
+    thp_count_test,
+    tr_count_test,
+    thpr_count_test,
+    p_count_test,
+    np_count_test,
+) = extract_counts(y_test)
+
+"""
+Final_score = Overall_accuracy – Unfairness
+
+Overall_accuracy=
+Percentage_of_true_top_performers_hired * 25+
+Percentage_of_true_retained_hired * 25 +
+Percentage_of_true_retained_top_perf_hired * 50
+
+Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
+"""
+adverse_impact_ratio = (p_count_hired / p_count_test) / (np_count_hired / np_count_test)
 unfairness = abs(1.0 - adverse_impact_ratio) * 100
-
-print(unfairness)
-
-print(
+print(f"unfairness: {unfairness}")
+final_score = (
     25 * (thp_count_hired / thp_count_test)
     + 25 * (tr_count_hired / tr_count_test)
     + 50 * (thpr_count_hired / thpr_count_test)
-    - unfairness,
+    - unfairness
 )
+print(f"final score: {final_score}")
 
 # %%
