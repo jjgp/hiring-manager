@@ -15,6 +15,9 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
+# %% [markdown]
+# # Extracting target and predictors from train.csv
+
 # %%
 predictor_cols = list(PREDICTOR_COLS)
 target_cols = list(TARGET_COLS)
@@ -30,8 +33,12 @@ train.dropna(subset=target_cols, inplace=True)
 X = train[predictor_cols]
 y = train[target_cols]
 
-# Create a new target that represents candidates who are high performers and
+# %% [markdown]
+# # Adding derived targets
+# 1. _High performer retained_ represents candidates who are high performers and
 # retained
+
+# %%
 high_performer_retained_col = f"{HIGH_PERFORMER_COL}_{RETAINED_COL}"
 y[high_performer_retained_col] = y.apply(
     lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0),
@@ -40,6 +47,9 @@ y[high_performer_retained_col] = y.apply(
 target_cols.append(high_performer_retained_col)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+
+# %% [markdown]
+# # Pipeline and training
 
 # %%
 estimator = XGBClassifier(n_estimators=1000, learning_rate=0.05, n_jobs=4)
@@ -54,6 +64,9 @@ pipeline = Pipeline(
 pipeline.fit(X_train, y_train)
 y_proba = pipeline.predict_proba(X_test)
 
+# %% [markdown]
+# # Evaluation
+
 # %%
 y_pred = y_proba > 0.5
 for idx, target in enumerate(target_cols):
@@ -62,6 +75,9 @@ for idx, target in enumerate(target_cols):
     print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
     print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
     print()
+
+# %% [markdown]
+# # Ranking hires based on predictions and heuristic
 
 # %%
 """
@@ -78,7 +94,6 @@ Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
 # The following is a scoring mechanism inspired by the above
 # It is a heursitic and not the actual calculation
 # The purpose is to augment the probabilities with a heuristic and sort them
-assert target_cols == list(TARGET_COLS)
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = (
     hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] + 0.5 * y_proba[:, 3]
@@ -91,6 +106,10 @@ y_hired[hr_score_col] = hr_scores
 y_hired.sort_values(by=[hr_score_col], ascending=False, inplace=True)
 y_hired = y_hired.head(y_hired.shape[0] // 2)
 
+# %% [markdown]
+# # Final score
+
+# %%
 thp_count_test = y_test[y_test[HIGH_PERFORMER_COL] == 1.0].shape[0]
 tr_count_test = y_test[y_test[RETAINED_COL] == 1.0].shape[0]
 thpr_count_test = y_test[
