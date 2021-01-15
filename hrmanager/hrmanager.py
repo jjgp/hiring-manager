@@ -37,6 +37,7 @@ y[high_performer_retained_col] = y.apply(
     lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0),
     axis=1,
 )
+target_cols.append(high_performer_retained_col)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
@@ -55,18 +56,12 @@ y_proba = pipeline.predict_proba(X_test)
 
 # %%
 y_pred = y_proba > 0.5
-print(HIGH_PERFORMER_COL)
-print(accuracy_score(y_test[HIGH_PERFORMER_COL], y_pred[:, 0]))
-print(confusion_matrix(y_test[HIGH_PERFORMER_COL], y_pred[:, 0]))
-print(PROTECTED_GROUP_COL)
-print(accuracy_score(y_test[PROTECTED_GROUP_COL], y_pred[:, 1]))
-print(confusion_matrix(y_test[PROTECTED_GROUP_COL], y_pred[:, 1]))
-print(RETAINED_COL)
-print(accuracy_score(y_test[RETAINED_COL], y_pred[:, 2]))
-print(confusion_matrix(y_test[RETAINED_COL], y_pred[:, 2]))
-print(high_performer_retained_col)
-print(accuracy_score(y_test[high_performer_retained_col], y_pred[:, 3]))
-print(confusion_matrix(y_test[high_performer_retained_col], y_pred[:, 3]))
+for idx, target in enumerate(target_cols):
+    print(f"{target}")
+    print("-" * len(target))
+    print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
+    print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
+    print()
 
 # %%
 """
