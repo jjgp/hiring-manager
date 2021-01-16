@@ -42,26 +42,21 @@ y = train[target_cols]
 # 3. _Exclusive high performer_ candidates that are only high performer
 
 # %%
-high_performer_retained_col = f"{HIGH_PERFORMER_COL}_{RETAINED_COL}"
-y[high_performer_retained_col] = y.apply(
-    lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0),
-    axis=1,
-)
-target_cols.append(high_performer_retained_col)
+derived_targets_map = {
+    f"{HIGH_PERFORMER_COL}_{RETAINED_COL}": lambda row: int(
+        row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0,
+    ),
+    f"Exclusive_{RETAINED_COL}": lambda row: int(
+        row[HIGH_PERFORMER_COL] < 1 and row[RETAINED_COL] > 0,
+    ),
+    f"Exclusive_{HIGH_PERFORMER_COL}": lambda row: int(
+        row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] < 1,
+    ),
+}
 
-exclusive_retained_col = f"Exclusive_{RETAINED_COL}"
-y[exclusive_retained_col] = y.apply(
-    lambda row: int(row[HIGH_PERFORMER_COL] < 1 and row[RETAINED_COL] > 0),
-    axis=1,
-)
-target_cols.append(exclusive_retained_col)
-
-exclusive_high_performer = f"Exclusive_{HIGH_PERFORMER_COL}"
-y[exclusive_high_performer] = y.apply(
-    lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] < 1),
-    axis=1,
-)
-target_cols.append(exclusive_high_performer)
+for derived_target, derivation in derived_targets_map.items():
+    y[derived_target] = y.apply(derivation, axis=1)
+    target_cols.append(derived_target)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratify=y)
 
