@@ -13,6 +13,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
 # %% [markdown]
@@ -35,8 +36,10 @@ y = train[target_cols]
 
 # %% [markdown]
 # # Adding derived targets
-# 1. _High performer retained_ represents candidates who are high performers and
+# 1. _High performer retained_ candidates who are high performers and
 # retained
+# 2. _Exclusive retained_ candidates that are only retained
+# 3. _Exclusive high performer_ candidates that are only high performer
 
 # %%
 high_performer_retained_col = f"{HIGH_PERFORMER_COL}_{RETAINED_COL}"
@@ -46,7 +49,21 @@ y[high_performer_retained_col] = y.apply(
 )
 target_cols.append(high_performer_retained_col)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+exclusive_retained_col = f"Exclusive_{RETAINED_COL}"
+y[exclusive_retained_col] = y.apply(
+    lambda row: int(row[HIGH_PERFORMER_COL] < 1 and row[RETAINED_COL] > 0),
+    axis=1,
+)
+target_cols.append(exclusive_retained_col)
+
+exclusive_high_performer = f"Exclusive_{HIGH_PERFORMER_COL}"
+y[exclusive_high_performer] = y.apply(
+    lambda row: int(row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] < 1),
+    axis=1,
+)
+target_cols.append(exclusive_high_performer)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratify=y)
 
 # %% [markdown]
 # # Pipeline and training
@@ -64,6 +81,7 @@ model = OneVsRestClassifier(estimator)
 pipeline = Pipeline(
     steps=[
         ("imputer", SimpleImputer()),
+        ("scaler", StandardScaler()),
         ("model", model),
     ],
 )
@@ -109,25 +127,25 @@ def extract_counts(split):  # noqa: E302
     thpr_count = split[
         (split[HIGH_PERFORMER_COL] == 1.0) & (split[RETAINED_COL] == 1.0)
     ].shape[0]
-    p_count = split[split[PROTECTED_GROUP_COL] == 1.0].shape[0]
-    np_count = split[split[PROTECTED_GROUP_COL] == 0.0].shape[0]
-    return (thp_count, tr_count, thpr_count, p_count, np_count)
+    pro_count = split[split[PROTECTED_GROUP_COL] == 1.0].shape[0]
+    priv_count = split[split[PROTECTED_GROUP_COL] == 0.0].shape[0]
+    return (thp_count, tr_count, thpr_count, pro_count, priv_count)
 
 
 (
     thp_count_hired,
     tr_count_hired,
     thpr_count_hired,
-    p_count_hired,
-    np_count_hired,
+    pro_count_hired,
+    priv_count_hired,
 ) = extract_counts(y_hired)
 
 (
     thp_count_test,
     tr_count_test,
     thpr_count_test,
-    p_count_test,
-    np_count_test,
+    pro_count_test,
+    priv_count_test,
 ) = extract_counts(y_test)
 
 """
@@ -140,15 +158,28 @@ Percentage_of_true_retained_top_perf_hired * 50
 
 Unfairness = Absolute_value(1 - Adverse_impact_ratio) * 100
 """
-adverse_impact_ratio = (p_count_hired / p_count_test) / (np_count_hired / np_count_test)
+ratio_pro = pro_count_hired / pro_count_test
+print(f"ratio protected hired: {ratio_pro}")
+
+ratio_priv = priv_count_hired / priv_count_test
+print(f"ratio privilegded hired: {ratio_priv}")
+
+adverse_impact_ratio = ratio_pro / ratio_priv
+print(f"adverse impact ratio: {adverse_impact_ratio}")
+
 unfairness = abs(1.0 - adverse_impact_ratio) * 100
 print(f"unfairness: {unfairness}")
-final_score = (
-    25 * (thp_count_hired / thp_count_test)
-    + 25 * (tr_count_hired / tr_count_test)
-    + 50 * (thpr_count_hired / thpr_count_test)
-    - unfairness
-)
+
+ratio_thp = thp_count_hired / thp_count_test
+print(f"ratio true high performer: {ratio_thp}")
+
+ratio_tr = tr_count_hired / tr_count_test
+print(f"ratio true retained: {ratio_tr}")
+
+ratio_thpr = thpr_count_hired / thpr_count_test
+print(f"ratio true high performer retained: {ratio_thpr}")
+
+final_score = 25 * ratio_thp + 25 * ratio_tr + 50 * ratio_thpr - unfairness
 print(f"final score: {final_score}")
 
 # %%
