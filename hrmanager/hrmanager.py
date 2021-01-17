@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 import pandas as pd
+from IPython.display import display
 from schema import HIGH_PERFORMER_COL
 from schema import INDEX_COL
 from schema import PREDICTOR_COLS
@@ -8,21 +9,25 @@ from schema import PROTECTED_GROUP_COL
 from schema import RETAINED_COL
 from schema import TARGET_COLS
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
+# from sklearn.metrics import accuracy_score
+# from sklearn.metrics import confusion_matrix
+
 # %% [markdown]
-# # Extracting targets and predictors from train.csv
+# # Extracting predictors and targets from train.csv
 
 # %%
+label_col = "label"
 predictor_cols = list(PREDICTOR_COLS)
 target_cols = list(TARGET_COLS)
 usecols = [INDEX_COL] + target_cols + predictor_cols
+weight_col = "weight"
+
 train = pd.read_csv(
     "../data/train.csv",
     index_col="UNIQUE_ID",
@@ -32,85 +37,101 @@ train = pd.read_csv(
 train.dropna(subset=target_cols, inplace=True)
 
 X = train[predictor_cols]
-y = train[target_cols]
+
 
 # %% [markdown]
-# # Adding derived targets
-# 1. _High performer retained_ candidates who are high performers and
-# retained
-# 2. _Exclusive retained_ candidates that are only retained
-# 3. _Exclusive high performer_ candidates that are only high performer
+# # Creating class labels
+#
+# (None, 0), (High_Performer, 1), (Retained, 2), (High_Performer & Retained, 3)
 
 # %%
-derived_targets_map = {
-    f"{HIGH_PERFORMER_COL}_{RETAINED_COL}": lambda row: int(
-        row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] > 0,
-    ),
-    f"Exclusive_{RETAINED_COL}": lambda row: int(
-        row[HIGH_PERFORMER_COL] < 1 and row[RETAINED_COL] > 0,
-    ),
-    f"Exclusive_{HIGH_PERFORMER_COL}": lambda row: int(
-        row[HIGH_PERFORMER_COL] > 0 and row[RETAINED_COL] < 1,
-    ),
-}
 
-for derived_target, derivation in derived_targets_map.items():
-    y[derived_target] = y.apply(derivation, axis=1)
-    target_cols.append(derived_target)
+targets = train[target_cols]
+targets[label_col] = targets.apply(
+    lambda row: int(row[HIGH_PERFORMER_COL] + 2 * row[RETAINED_COL]),
+    axis=1,
+)
+targets.head()
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratify=y)
+# %% [markdown]
+# # Train test split
+
+# %%
+X_train, X_test, targets_train, targets_test = train_test_split(
+    X,
+    targets,
+    test_size=0.1,
+    stratify=targets[label_col],
+)
+y_train, y_test = targets_train[label_col], targets_test[label_col]
+
+# %% [markdown]
+# # Computing sample weights
+#
+# The sample weights are based on the ratio of protected / priviledged classes. It's
+# possible to do weighting based on the occurrences of the aforementioned in
+# combination with the class label; however, left for futher investigation. Weights are
+# calculated on the train set to avoid data leakage from the test set.
+
+# %%
+w_train = compute_sample_weight("balanced", targets_train[PROTECTED_GROUP_COL])
+display(targets_train.head())
+display(w_train[:5])
 
 # %% [markdown]
 # # Pipeline and training
 
 # %%
 estimator = XGBClassifier(
-    objective="binary:logistic",
-    eval_metric="logloss",
+    objective="multiclass:softmax",
+    eval_metric="mlogloss",
     n_estimators=1000,
     learning_rate=0.05,
     n_jobs=4,
+    num_class=4,
 )
-model = OneVsRestClassifier(estimator)
 
 pipeline = Pipeline(
     steps=[
         ("imputer", SimpleImputer()),
         ("scaler", StandardScaler()),
-        ("model", model),
+        ("estimator", estimator),
     ],
 )
-pipeline.fit(X_train, y_train)
+
+pipeline.fit(X_train, y_train)  # , estimator__sample_weight=w_train)
 y_proba = pipeline.predict_proba(X_test)
+y_proba[:5]
 
 # %% [markdown]
 # # Evaluation
 
 # %%
-y_pred = y_proba > 0.5
-for idx, target in enumerate(target_cols):
-    print(f"{target}")
-    print("-" * len(target))
-    print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
-    print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
-    print()
+# TODO: replace metrics with multiclass metrics
+# y_pred = y_proba > 0.5
+# for idx, target in enumerate(target_cols):
+#     print(f"{target}")
+#     print("-" * len(target))
+#     print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
+#     print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
+#     print()
 
 # %% [markdown]
 # # Ranking hires based on predictions and heuristic
 
 # %%
 # This heuristic is based on the actual scoring mechanism
+# TODO: proba may need to be converted from logistic to some other distribution?
 hr_scores = np.zeros((y_proba.shape[0]))
 hr_scores = (
-    hr_scores[:] + 0.25 * y_proba[:, 0] + 0.25 * y_proba[:, 2] + 0.5 * y_proba[:, 3]
+    hr_scores[:] + 0.25 * y_proba[:, 1] + 0.25 * y_proba[:, 2] + 0.5 * y_proba[:, 3]
 )
-hr_scores = hr_scores[:] + 0.1 * y_proba[:, 1]
-
 hr_score_col = "HR_SCORE"
-y_hired = y_test.copy()
-y_hired[hr_score_col] = hr_scores
-y_hired.sort_values(by=[hr_score_col], ascending=False, inplace=True)
-y_hired = y_hired.head(y_hired.shape[0] // 2)
+targets_hired = targets_test.copy()
+targets_hired[hr_score_col] = hr_scores
+targets_hired.sort_values(by=[hr_score_col], ascending=False, inplace=True)
+targets_hired = targets_hired.head(targets_hired.shape[0] // 2)
+targets_hired.head()
 
 # %% [markdown]
 # # Final score
@@ -133,7 +154,7 @@ def extract_counts(split):  # noqa: E302
     thpr_count_hired,
     pro_count_hired,
     priv_count_hired,
-) = extract_counts(y_hired)
+) = extract_counts(targets_hired)
 
 (
     thp_count_test,
@@ -141,7 +162,7 @@ def extract_counts(split):  # noqa: E302
     thpr_count_test,
     pro_count_test,
     priv_count_test,
-) = extract_counts(y_test)
+) = extract_counts(targets_test)
 
 """
 Final_score = Overall_accuracy – Unfairness
