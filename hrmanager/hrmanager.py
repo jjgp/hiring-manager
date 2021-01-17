@@ -9,14 +9,15 @@ from schema import PROTECTED_GROUP_COL
 from schema import RETAINED_COL
 from schema import TARGET_COLS
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
-
-# from sklearn.metrics import accuracy_score
-# from sklearn.metrics import confusion_matrix
 
 # %% [markdown]
 # # Extracting predictors and targets from train.csv
@@ -83,7 +84,7 @@ display(w_train[:5])
 
 # %%
 estimator = XGBClassifier(
-    objective="multiclass:softmax",
+    objective="multiclass:softprob",
     eval_metric="mlogloss",
     n_estimators=1000,
     learning_rate=0.05,
@@ -99,7 +100,7 @@ pipeline = Pipeline(
     ],
 )
 
-pipeline.fit(X_train, y_train)  # , estimator__sample_weight=w_train)
+pipeline.fit(X_train, y_train, estimator__sample_weight=w_train)
 y_proba = pipeline.predict_proba(X_test)
 y_proba[:5]
 
@@ -107,14 +108,11 @@ y_proba[:5]
 # # Evaluation
 
 # %%
-# TODO: replace metrics with multiclass metrics
-# y_pred = y_proba > 0.5
-# for idx, target in enumerate(target_cols):
-#     print(f"{target}")
-#     print("-" * len(target))
-#     print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
-#     print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
-#     print()
+y_pred = np.argmax(y_proba, axis=1)
+display(accuracy_score(y_test, y_pred))
+display(confusion_matrix(y_test, y_pred))
+display(precision_score(y_test, y_pred, labels=[3], average="weighted"))
+display(recall_score(y_test, y_pred, labels=[3], average="weighted"))
 
 # %% [markdown]
 # # Ranking hires based on predictions and heuristic
@@ -123,9 +121,7 @@ y_proba[:5]
 # This heuristic is based on the actual scoring mechanism
 # TODO: proba may need to be converted from logistic to some other distribution?
 hr_scores = np.zeros((y_proba.shape[0]))
-hr_scores = (
-    hr_scores[:] + 0.25 * y_proba[:, 1] + 0.25 * y_proba[:, 2] + 0.5 * y_proba[:, 3]
-)
+hr_scores = hr_scores[:] + 0.25 * y_pred + 0.25 * y_pred + 0.5 * y_pred
 hr_score_col = "HR_SCORE"
 targets_hired = targets_test.copy()
 targets_hired[hr_score_col] = hr_scores
