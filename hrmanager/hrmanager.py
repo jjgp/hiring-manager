@@ -22,6 +22,7 @@ from xgboost import XGBClassifier
 predictor_cols = list(PREDICTOR_COLS)
 target_cols = list(TARGET_COLS)
 train = read_train(target_cols)
+train.dropna(subset=target_cols, inplace=True)
 
 X = train[predictor_cols]
 y = train[target_cols]
