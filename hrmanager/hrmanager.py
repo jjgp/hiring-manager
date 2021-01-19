@@ -1,8 +1,7 @@
 # %%
 import numpy as np
-import pandas as pd
+from read_train import read_train
 from schema import HIGH_PERFORMER_COL
-from schema import INDEX_COL
 from schema import PREDICTOR_COLS
 from schema import PROTECTED_GROUP_COL
 from schema import RETAINED_COL
@@ -22,14 +21,7 @@ from xgboost import XGBClassifier
 # %%
 predictor_cols = list(PREDICTOR_COLS)
 target_cols = list(TARGET_COLS)
-usecols = [INDEX_COL] + target_cols + predictor_cols
-train = pd.read_csv(
-    "../data/train.csv",
-    index_col="UNIQUE_ID",
-    usecols=usecols,
-    na_values=" ",
-)
-train.dropna(subset=target_cols, inplace=True)
+train = read_train(target_cols)
 
 X = train[predictor_cols]
 y = train[target_cols]
