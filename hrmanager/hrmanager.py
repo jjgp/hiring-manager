@@ -1,4 +1,5 @@
 # %%
+# import category_encoders as ce
 import numpy as np
 import pandas as pd
 from schema import HIGH_PERFORMER_COL
@@ -12,9 +13,16 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
+
+# from IPython.display import display
+
+# %% [markdown]
+# # Random seed
+
+np.random.seed(1337)
 
 # %% [markdown]
 # # Extracting targets and predictors from train.csv
@@ -71,15 +79,9 @@ estimator = XGBClassifier(
     learning_rate=0.05,
     n_jobs=4,
 )
-model = OneVsRestClassifier(estimator)
+clf = OneVsRestClassifier(estimator)
 
-pipeline = Pipeline(
-    steps=[
-        ("imputer", SimpleImputer()),
-        ("scaler", StandardScaler()),
-        ("model", model),
-    ],
-)
+pipeline = make_pipeline(SimpleImputer(), StandardScaler(), clf)
 pipeline.fit(X_train, y_train)
 y_proba = pipeline.predict_proba(X_test)
 
