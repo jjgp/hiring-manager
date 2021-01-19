@@ -4,7 +4,7 @@ import numpy as np
 from IPython.display import display
 from read_train import read_train
 from schema import PREDICTOR_COLS
-from schema import PROTECTED_GROUP_COL
+from schema import PROTECTED_GROUP_COL as TARGET
 from schema import TARGET_COLS
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
@@ -30,7 +30,7 @@ train.fillna(-1, inplace=True)
 display(train)
 
 X = train[predictor_cols]
-y = train[PROTECTED_GROUP_COL]
+y = train[TARGET]
 
 # %% [markdown]
 # # Train test split
