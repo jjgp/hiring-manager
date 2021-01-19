@@ -1,21 +1,26 @@
 # %%
-# import category_encoders as ce
+import category_encoders as ce
 import numpy as np
 import pandas as pd
+from IPython.display import display
 from schema import HIGH_PERFORMER_COL
 from schema import INDEX_COL
 from schema import PREDICTOR_COLS
 from schema import PROTECTED_GROUP_COL
 from schema import RETAINED_COL
 from schema import TARGET_COLS
+from sklearn.compose import make_column_transformer
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
+
+# from schema import NUMERIC_PREDICTOR_COLS
+# from schema import ORDINAL_PREDICTOR_COLS
+
+# from sklearn.multiclass import OneVsRestClassifier
 
 # from IPython.display import display
 
@@ -72,6 +77,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratif
 # # Pipeline and training
 
 # %%
+imputer_column_transformer = make_column_transformer(
+    (SimpleImputer(strategy="constant", fill_value=-1), list(PREDICTOR_COLS)),
+    # (SimpleImputer(), list(NUMERIC_PREDICTOR_COLS)),
+)
+X_train[:] = imputer_column_transformer.fit_transform(X_train)
+
+# %%
 estimator = XGBClassifier(
     objective="binary:logistic",
     eval_metric="logloss",
@@ -79,23 +91,32 @@ estimator = XGBClassifier(
     learning_rate=0.05,
     n_jobs=4,
 )
-clf = OneVsRestClassifier(estimator)
 
-pipeline = make_pipeline(SimpleImputer(), StandardScaler(), clf)
-pipeline.fit(X_train, y_train)
+# pipeline_estimator = make_pipeline(
+#     ce.CountEncoder(cols=slice(0, 120, 1)),
+#     estimator
+# )
+
+# clf = OneVsRestClassifier(estimator)
+
+pipeline = make_pipeline(ce.CountEncoder(cols=list(PREDICTOR_COLS)), estimator)
+pipeline.fit(X_train, y_train[PROTECTED_GROUP_COL])
 y_proba = pipeline.predict_proba(X_test)
 
 # %% [markdown]
 # # Evaluation
 
 # %%
-y_pred = y_proba > 0.5
-for idx, target in enumerate(target_cols):
-    print(f"{target}")
-    print("-" * len(target))
-    print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
-    print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
-    print()
+y_pred = np.argmax(y_proba, axis=1)
+display(accuracy_score(y_test[PROTECTED_GROUP_COL], y_pred))
+display(confusion_matrix(y_test[PROTECTED_GROUP_COL], y_pred))
+# y_pred = y_proba > 0.5
+# for idx, target in enumerate([target_cols]):
+#     print(f"{target}")
+#     print("-" * len(target))
+#     print(f"accuracy: {accuracy_score(y_test[target], y_pred[:, idx])}")
+#     print(f"confusion matrix:\n{confusion_matrix(y_test[target], y_pred[:, idx])}")
+#     print()
 
 # %% [markdown]
 # # Ranking hires based on predictions and heuristic
